@@ -10,6 +10,9 @@ Run:  python app.py   ->   http://localhost:7860
 
 from __future__ import annotations
 
+import datetime
+import json
+
 import gradio as gr
 
 from query import ask
@@ -78,8 +81,33 @@ MORE_EXAMPLES = [
 ]
 
 
-def handle_query(question: str):
-    result = ask(question)
+def source_choices() -> list[str]:
+    try:
+        return sorted({json.loads(l)["source"] for l in open("chunks.jsonl", encoding="utf-8")})
+    except OSError:
+        return []
+
+
+SOURCE_CHOICES = source_choices()
+POSTED_CHOICES = ["Any time", "Past year", "Past 2 years"]
+
+
+def _since_ts(posted: str) -> int | None:
+    days = {"Past year": 365, "Past 2 years": 730}.get(posted)
+    if not days:
+        return None
+    cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
+    return int(cutoff.timestamp())
+
+
+def handle_query(question, sources, posted, include_undated, min_score):
+    result = ask(
+        question,
+        sources=sources or None,
+        since_ts=_since_ts(posted),
+        include_undated=include_undated,
+        min_score=int(min_score),
+    )
 
     if result["sources"]:
         sources_md = "\n".join(f"- [{s['source']}]({s['url']})" for s in result["sources"])
@@ -115,6 +143,18 @@ with gr.Blocks(title="The Unofficial Guide") as demo:
     with gr.Accordion("…or dig into the details", open=False):
         example_btns += [gr.Button(q, elem_classes="qbtn") for q in MORE_EXAMPLES]
 
+    with gr.Accordion("🔎 Filters", open=False):
+        source_dd = gr.Dropdown(
+            SOURCE_CHOICES, multiselect=True,
+            label="Source documents (leave blank for all)",
+        )
+        with gr.Row():
+            posted = gr.Radio(POSTED_CHOICES, value="Any time", label="Posted")
+            min_score = gr.Slider(0, 25, value=0, step=1, label="Min Reddit upvotes")
+        include_undated = gr.Checkbox(
+            value=True, label="Include undated sources when a date window is set",
+        )
+
     gr.Markdown("### Answer")
     answer = gr.Markdown(elem_id="answer-card")
     gr.Markdown("### 📍 Retrieved from")
@@ -123,13 +163,14 @@ with gr.Blocks(title="The Unofficial Guide") as demo:
         receipts = gr.Markdown()
 
     outputs = [answer, sources, receipts]
-    ask_btn.click(handle_query, inputs=question, outputs=outputs)
-    question.submit(handle_query, inputs=question, outputs=outputs)
+    filter_inputs = [question, source_dd, posted, include_undated, min_score]
+    ask_btn.click(handle_query, inputs=filter_inputs, outputs=outputs)
+    question.submit(handle_query, inputs=filter_inputs, outputs=outputs)
 
-    # each example button drops its text into the box, then answers
+    # each example button drops its text into the box, then answers (honoring filters)
     for btn in example_btns:
         btn.click(lambda v=btn.value: v, outputs=question).then(
-            handle_query, inputs=question, outputs=outputs
+            handle_query, inputs=filter_inputs, outputs=outputs
         )
 
 

@@ -108,17 +108,50 @@ def build_index(rebuild: bool = False) -> chromadb.Collection:
     return col
 
 
-def retrieve(query: str, k: int = DEFAULT_K, col: chromadb.Collection | None = None) -> list[dict]:
-    """Return the top-k chunks for `query` with metadata and cosine distance."""
+def retrieve(
+    query: str,
+    k: int = DEFAULT_K,
+    col: chromadb.Collection | None = None,
+    sources: list[str] | None = None,
+    since_ts: int | None = None,
+    include_undated: bool = True,
+    min_score: int = 0,
+) -> list[dict]:
+    """Return the top-k chunks for `query` with metadata and cosine distance.
+
+    Optional metadata filters (applied in rank order, then truncated to k):
+      sources         keep only chunks from these source filenames
+      since_ts        keep only chunks dated on/after this unix timestamp
+      include_undated when a date window is set, whether date-less docs still pass
+      min_score       drop Reddit comments below this upvote score (prose/posts kept)
+    """
     if col is None:
         col = chromadb.PersistentClient(path=DB_PATH).get_collection(COLLECTION)
     q_emb = model().encode([query], normalize_embeddings=True).tolist()
-    res = col.query(query_embeddings=q_emb, n_results=k)
+
+    filtering = bool(sources) or since_ts is not None or min_score > 0
+    n = col.count() if filtering else k          # over-retrieve, then filter in rank order
+    res = col.query(query_embeddings=q_emb, n_results=n)
+
     hits = []
     for doc, md, dist, _id in zip(
         res["documents"][0], res["metadatas"][0], res["distances"][0], res["ids"][0]
     ):
-        hits.append({"id": _id, "text": doc, "distance": dist, **md})
+        h = {"id": _id, "text": doc, "distance": dist, **md}
+        if sources and h["source"] not in sources:
+            continue
+        if since_ts is not None:
+            ts = h.get("date_ts")
+            if ts is None:
+                if not include_undated:
+                    continue
+            elif ts < since_ts:
+                continue
+        if min_score and h.get("kind") == "reddit_comment" and h.get("score", 0) < min_score:
+            continue
+        hits.append(h)
+        if len(hits) >= k:
+            break
     return hits
 
 

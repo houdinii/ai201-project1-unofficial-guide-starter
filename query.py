@@ -57,13 +57,16 @@ def _format_context(hits: list[dict]) -> str:
                        for i, h in enumerate(hits, 1))
 
 
-def ask(question: str, k: int = DEFAULT_K) -> dict:
-    """Return {answer, sources, hits} for a question, grounded in retrieved chunks."""
+def ask(question: str, k: int = DEFAULT_K, **filters) -> dict:
+    """Return {answer, sources, hits} for a question, grounded in retrieved chunks.
+
+    Extra keyword filters (sources, since_ts, include_undated, min_score) are passed
+    straight through to retrieve()."""
     question = (question or "").strip()
     if not question:
         return {"answer": "Ask me something about life at UT Austin.", "sources": [], "hits": []}
 
-    hits = retrieve(question, k=k)
+    hits = retrieve(question, k=k, **filters)
 
     # deduped source docs (with URLs) for attribution
     sources, seen = [], set()
