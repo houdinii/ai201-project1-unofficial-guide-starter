@@ -19,8 +19,6 @@ This seeks to answer questions like ‘Will I be the only person in my 30’s in
 
 ## Document Sources
 
-
-
 | #  | Source               | Description                                                                                                                                      | URL or location                                                                                |
 |----|----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | 1  | Reddit               | Older transfer student in their late 30s asking how to deal with feeling out of place and where older students hang out (New Wave Longhorns org) | https://www.reddit.com/r/UTAustin/comments/1njalkz/for_older_nontraditional_students_advice/   |
@@ -92,9 +90,18 @@ I would also want to use a model that's been fine-tuned on a domain-specific tas
      Do not just say "I told it to use the documents" — show the actual instruction or explain
      the mechanism. -->
 
+We filtered out low-relevance chunks, 8 tokens and less. 
+
 **System prompt grounding instruction:**
+The system prompt uses a hard 'only' rule `Answer using ONLY the information in the SOURCES. Never add facts from your own general knowledge, even if you are confident` That's follwed by a 'refusal contract' (which is a hard refusal) `If the SOURCES do not contain enough to answer, reply with exactly: "I don't have enough information on that.`
+
+All claims require an inline citation: `Cite the source document name(s) you used, inline, like (source: )` 
+I also included a voice constraint to remain in the correct voicel.
+
+The source filenames are sent with the chunks for easy citing. I set the temp to 0.2 to lower drift, too. 
 
 **How source attribution is surfaced in the response:**
+The LLM cites the source document inline in its answer text like `(source: modalshift_ut_austin_msds_online_review.md)`, and ask() independently returns the deduped list of retrieved source docs with their URLs, which the Gradio UI renders as clickable links under "📍 Retrieved from" (plus the exact chunks and distances in the "🧾 receipts" accordion). 
 
 ---
 
@@ -106,7 +113,7 @@ I would also want to use a model that's been fine-tuned on a domain-specific tas
 | 2 | How much will I actually interact with professors and classmates online?             | Very little — mostly Slack/Piazza/Discord and TA-run office hours; you have to start study groups yourself.              |
 | 3 | What topics are on the UT Math Assessment, and how should I prepare after years off? | Mostly Algebra I/II and precalc (some trig, a little calc); a practice exam and review modules are provided.             |
 | 4 | Can a PhD student live on the UT stipend, and are second jobs allowed?               | ~$2,400/mo is tight but livable; second jobs are usually barred by contract — extra TA/RA hours (up to 30) are the way.  |
-| 5 | How do I establish Texas residency to qualify for in-state tuition?                  | Live in Texas 12 consecutive months and maintain domicile via gainful employment (student jobs don't count).             |
+| 5 | How do I establish Texas residency to qualify for in-state tuition?                  | Live in Texas 12 consecutive months and 'maintain domicile via gainful employment' (student jobs don't count).           |
 
 **Retrieval quality:** Relevant / Partially relevant / Off-target  
 **Response accuracy:** Accurate / Partially accurate / Inaccurate
@@ -115,57 +122,44 @@ I would also want to use a model that's been fine-tuned on a domain-specific tas
 
 ## Failure Case Analysis
 
-<!-- Identify at least one question where retrieval or generation did not work as expected.
-     Write a specific explanation of *why* it failed, tied to a part of the pipeline.
-
-     "The answer was wrong" is not an explanation.
-
-     "The relevant information was split across a chunk boundary, so retrieval returned
-     only half the context — the model didn't have enough to answer correctly" is an explanation.
-
-     "The embedding model treated the professor's nickname as out-of-vocabulary and returned
-     results from an unrelated review" is an explanation. -->
-
 **Question that failed:**
+How do I establish Texas residency for in-state tuition?
 
 **What the system returned:**
+```
+To establish Texas residency for in-state tuition, you must meet certain criteria. According to the rules mentioned (source: college_confidential_establish_residency.md), if you are independent for tax purposes, you may gain resident status if you establish domicile in the state. To establish domicile, you must live in Texas for 12 consecutive months and establish and maintain domicile for 12 consecutive months, as evidenced by gainful employment in Texas, sole or joint marital ownership of residential real property in Texas, ownership and operation of a business in Texas, or marriage for one year to a person who has established domicile in Texas.
+```
 
 **Root cause (tied to a specific pipeline stage):**
+Retrieval/Generation. The model returned a partially cited answer, but elaborated in a manner that drew from it's own knowledge.
+
+The information can be found in the source documents, so this may be due to the lower k number. It may aslo be due to the prompt not elaborating on the requirements enough.
 
 **What you would change to fix it:**
+I can raise the k number a bit. I can also do some prompt engineering to ensure the LLM stays within bounds.
 
 ---
 
 ## Spec Reflection
 
-<!-- Reflect on how planning.md shaped your implementation.
-     Answer both questions with at least 2–3 sentences each. -->
-
 **One way the spec helped you during implementation:**
+The spec maintained a source of truth between me and the model I was working with (Claude Code). I have trouble remembering the exact steps I need to take by nature, so the spec is just as helpful to me as the model.
 
 **One way your implementation diverged from the spec, and why:**
+I was planning on using a k=10 value, but the reddit comments were very short, and the results were a bit odd, so I backed off. I ended up settling on 5, a value that retuned enough to answer questions but not enoguh to lead to extranuous info in the result.
 
 ---
 
 ## AI Usage
 
-<!-- Describe at least 2 specific instances where you used an AI tool during this project.
-     For each: what did you give the AI as input, what did it produce, and what did you
-     change, override, or direct differently?
-
-     "I used Claude to help me code" is not sufficient.
-     "I gave Claude my Chunking Strategy section from planning.md and asked it to implement
-     chunk_text(). It returned a function using a fixed character split. I overrode the
-     chunk size from 500 to 200 because my documents are short reviews, not long guides." -->
-
 **Instance 1**
 
-- *What I gave the AI:*
-- *What it produced:*
-- *What I changed or overrode:*
+- *What I gave the AI:* I provided the system with my planning document and a text-only version of my flowchart.
+- *What it produced:* The AI produced a chunking strategy that was tailored to my documents.
+- *What I changed or overrode:* I overrode the chunk size from 500 to 256 because my documents are short social posts
 
 **Instance 2**
 
-- *What I gave the AI:*
-- *What it produced:*
-- *What I changed or overrode:*
+- *What I gave the AI:* I provided the system with my planning document and a text-only version of my flowchart, and a list of documents.
+- *What it produced:* A description of my pipeline, restated in new terms (for understanding) as well as a list of my questions permutated in various ways.
+- *What I changed or overrode:* Almost everything. This was not a great strategy for brainstorming. However, through the corrections I gained a ton of understanding

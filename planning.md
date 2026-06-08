@@ -64,7 +64,7 @@ I want to start with a 30-40 token overlap, since this is shorter content on ave
 all-MiniLM-L6-v2 via sentence-transformers
 
 **Top-k:**
-5T (for now) It's a bit of a guess, but it's a small corpus and smaller chunks.
+10 (for now) It's a bit of a guess, but it's a small corpus and smaller chunks.
 
 **Production tradeoff reflection:**
 If this were a real world application, I would want to use a higher top-k across a larger set of documents.
@@ -84,13 +84,13 @@ I would also want to use a model that's been fine-tuned on a domain-specific tas
      is right or wrong. "What are good dining halls?" is too vague.
      "What do students say about wait times at [dining hall name] during lunch?" is testable. -->
 
-| # | Question                                                                                        | Expected answer                                                      |
-|---|-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
+| # | Question                                                                             | Expected answer                                                                                                          |
+|---|--------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
 | 1 | Is Reinforcement Learning a good course to take online?                              | No — students found it disappointing: brief lectures, textbook-driven; they recommend the David Silver lectures instead. |
 | 2 | How much will I actually interact with professors and classmates online?             | Very little — mostly Slack/Piazza/Discord and TA-run office hours; you have to start study groups yourself.              |
 | 3 | What topics are on the UT Math Assessment, and how should I prepare after years off? | Mostly Algebra I/II and precalc (some trig, a little calc); a practice exam and review modules are provided.             |
 | 4 | Can a PhD student live on the UT stipend, and are second jobs allowed?               | ~$2,400/mo is tight but livable; second jobs are usually barred by contract — extra TA/RA hours (up to 30) are the way.  |
-| 5 | How do I establish Texas residency to qualify for in-state tuition?                  | Live in Texas 12 consecutive months and maintain domicile via gainful employment (student jobs don't count).            |
+| 5 | How do I establish Texas residency to qualify for in-state tuition?                  | Live in Texas 12 consecutive months and maintain 'domicile via gainful employment' (student jobs don't count).           |
 
 ---
 

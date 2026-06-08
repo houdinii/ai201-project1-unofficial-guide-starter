@@ -24,9 +24,4 @@ chroma/
 /docs/
 /corpus/
 /CLAUDE.md
-/.idea/inspectionProfiles/profiles_settings.xml
-/.idea/inspectionProfiles/Project_Default.xml
-/.idea/misc.xml
-/.idea/modules.xml
-/.idea/vcs.xml
-/scripts/url_to_md.py
+/.idea/
