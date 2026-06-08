@@ -1,4 +1,5 @@
 ~ source: https://www.reddit.com/r/UTAustin/comments/196l3qy/do_phd_students_typically_have_second_jobs/
+~ date: 2024-01-14
 
 # Do phd students typically have second jobs?
 

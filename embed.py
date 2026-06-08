@@ -19,6 +19,7 @@ Run:    python embed.py                 # build index (if needed) + run eval que
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import textwrap
 from pathlib import Path
@@ -70,6 +71,10 @@ def _metadata(c: dict) -> dict:
     }
     if c.get("score") is not None:
         md["score"] = c["score"]
+    if c.get("date"):
+        md["date"] = c["date"]                                   # ISO string, for display
+        md["date_ts"] = int(datetime.datetime.strptime(          # unix seconds, for range filters
+            c["date"], "%Y-%m-%d").replace(tzinfo=datetime.timezone.utc).timestamp())
     return md
 
 

@@ -1,4 +1,5 @@
 ~ source: https://www.reddit.com/r/UTAustin/comments/1kdmogf/ut_math_assessment_questions/
+~ date: 2025-05-03
 
 # UT Math Assessment Questions
 

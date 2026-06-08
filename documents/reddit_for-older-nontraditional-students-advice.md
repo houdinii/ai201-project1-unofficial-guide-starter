@@ -1,4 +1,5 @@
 ~ source:  https://www.reddit.com/r/UTAustin/comments/1njalkz/for_older_nontraditional_students_advice/
+~ date: 2025-09-17
 
 # For Older, Nontraditional Students (advice)
 

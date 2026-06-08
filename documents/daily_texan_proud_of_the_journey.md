@@ -1,4 +1,5 @@
 ~ source: https://thedailytexan.com/2023/08/07/i-am-proud-of-the-journey-i-took-to-get-to-ut/
+~ date: 2023-08-07
 
 A nontraditional student can be defined broadly. These types of students tend to be older, married, have a family or work a full-time job. Their high school graduation may have been a decade or more ago, and their time at UT may not be for their first degree, or even the first university they have attended.
 

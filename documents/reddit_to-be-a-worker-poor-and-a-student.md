@@ -1,4 +1,5 @@
 ~ source: https://www.reddit.com/r/UTAustin/comments/1bo3s8w/to_be_a_worker_poor_and_a_student/
+~ date: 2024-03-26
 
 # To Be a Worker, Poor, and a Student
 

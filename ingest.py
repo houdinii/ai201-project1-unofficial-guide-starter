@@ -77,6 +77,7 @@ class Chunk:
     text: str
     source: str          # filename
     url: str             # citation URL from the "~ source:" header
+    date: str            # publication date YYYY-MM-DD, if known (else "")
     title: str           # document title (first # heading, else from filename)
     section: str         # prose heading, or "post"/"comment" for Reddit
     kind: str            # reddit_post | reddit_comment | prose
@@ -86,18 +87,25 @@ class Chunk:
 
 
 # --- loading / cleaning -----------------------------------------------------
-def read_doc(path: Path) -> tuple[str, str, str]:
-    """Return (body, url, title): strip the '~ source:' header, capture its URL,
-    and pull the first Markdown heading as the title."""
+def read_doc(path: Path) -> tuple[str, str, str, str]:
+    """Return (body, url, title, date): drop the leading '~' header lines, capture
+    the source URL and (if present) a '~ date: YYYY-MM-DD' line, and pull the first
+    Markdown heading as the title."""
     raw = path.read_text(encoding="utf-8")
-    url = ""
+    url = date = ""
     body_lines: list[str] = []
     for line in raw.splitlines():
-        if not url and line.lstrip().startswith("~"):
-            m = re.search(r"https?://\S+", line)
-            if m:
-                url = m.group(0).rstrip("/")
-            continue  # drop the header line itself
+        s = line.lstrip()
+        if s.startswith("~"):                       # metadata header line — drop it
+            if not url:
+                m = re.search(r"https?://\S+", line)
+                if m:
+                    url = m.group(0).rstrip("/")
+            if not date and "date" in s.lower():
+                dm = re.search(r"\d{4}-\d{2}-\d{2}", s)
+                if dm:
+                    date = dm.group(0)
+            continue
         body_lines.append(line)
 
     title = ""
@@ -106,7 +114,7 @@ def read_doc(path: Path) -> tuple[str, str, str]:
             title = line.strip().lstrip("#").strip()
             break
 
-    return "\n".join(body_lines).strip(), url, title
+    return "\n".join(body_lines).strip(), url, title, date
 
 
 # --- token windowing (prose) ------------------------------------------------
@@ -215,7 +223,7 @@ def _title_from_filename(path: Path) -> str:
 
 
 def process_document(path: Path) -> tuple[list[Chunk], list[tuple[str, str]]]:
-    body, url, title = read_doc(path)
+    body, url, title, date = read_doc(path)
     src = path.name
     doc_title = title or _title_from_filename(path)
     chunks: list[Chunk] = []
@@ -228,6 +236,7 @@ def process_document(path: Path) -> tuple[list[Chunk], list[tuple[str, str]]]:
             text=text.strip(),
             source=src,
             url=url,
+            date=date,
             title=doc_title,
             section=section,
             kind=kind,
