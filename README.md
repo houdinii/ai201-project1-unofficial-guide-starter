@@ -9,31 +9,31 @@
 
 ## Domain
 
-<!-- What topic or category of knowledge does your system cover?
-     Why is this knowledge valuable, and why is it hard to find through official channels?
-     Example: "Student reviews of CS professors at [university] — useful because official
-     course descriptions don't reflect teaching style, exam difficulty, or workload." -->
+A guide for online students feeling out of place returning to school at the University of Texas at Austin's Computer Science program.
+
+Many universities and program's guidance is created for traditional students who show up at 18 right after high school. If you’re coming back at a later age, 35 for instance, the questions you might have won’t be found directly answered on any .edu page, and are scattered across social media, forums and other unofficial resources. 
+
+This seeks to answer questions like ‘Will I be the only person in my 30’s in the class?’  and subjects such as fitting classes around jobs and shedding the rust of being out of school so long.
 
 ---
 
 ## Document Sources
 
-<!-- List every source you collected documents from.
-     Be specific: include URLs, subreddit names, forum thread titles, or file names.
-     Aim for variety — sources that together cover different subtopics or perspectives. -->
 
-| # | Source | Type | URL or file path |
-|---|--------|------|-----------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| 6 | | | |
-| 7 | | | |
-| 8 | | | |
-| 9 | | | |
-| 10 | | | |
+
+| #  | Source               | Description                                                                                                                                      | URL or location                                                                                |
+|----|----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| 1  | Reddit               | Older transfer student in their late 30s asking how to deal with feeling out of place and where older students hang out (New Wave Longhorns org) | https://www.reddit.com/r/UTAustin/comments/1njalkz/for_older_nontraditional_students_advice/   |
+| 2  | Reddit               | Students describing what's on the UT Math Assessment (UTMA) and how to review for it after time off                                              | https://www.reddit.com/r/UTAustin/comments/1kdmogf/ut_math_assessment_questions/               |
+| 3  | Reddit               | Working-class student's account of balancing multiple jobs with school, food insecurity, and UT support resources                                | https://www.reddit.com/r/UTAustin/comments/1bo3s8w/to_be_a_worker_poor_and_a_student/          |
+| 4  | Reddit               | Prospective STEM PhD student asking whether the stipend is livable and if second jobs are allowed                                                | https://www.reddit.com/r/UTAustin/comments/196l3qy/do_phd_students_typically_have_second_jobs/ |
+| 5  | Instagram            | Senate of College Councils post defining the Non-Traditional Student Scholarship and its eligibility                                             | https://www.instagram.com/p/DAQ4_hiKohH/                                                       |
+| 6  | The Daily Texan      | First-person column from a nontraditional student (married, working mom of three) on her path to UT                                              | https://thedailytexan.com/2023/08/07/i-am-proud-of-the-journey-i-took-to-get-to-ut/            |
+| 7  | College Confidential | Forum thread on which credits to transfer in, the 60-hour transfer cap, and in-residence requirements                                            | https://talk.collegeconfidential.com/t/transferring-college-credits/1706757                    |
+| 8  | College Confidential | Forum thread on establishing Texas residency to qualify for in-state tuition                                                                     | https://talk.collegeconfidential.com/t/establishing-in-state-residency/1775711                 |
+| 9  | modalshift.co        | Review of UT's online MSDS/MSCS program with cost, admissions, format, and course ratings                                                        | https://modalshift.co/msdso-review/                                                            |
+| 10 | 921kiyo.com          | A person's experience of UT's online MSCS program                                                                                                | https://921kiyo.com/ut-austin-cs-online/                                                       |
+
 
 ---
 
@@ -46,14 +46,19 @@
      - Any preprocessing you did before chunking (e.g., stripping HTML, removing headers)
      - What your final chunk count was across all documents -->
 
+The titles of the documents were often irrelevant to the context, so I only included them in the metadata. I also removed dates, usernames and other short metadata related snippets. All HTML was removed, leaving only the core text and headers.
+
 **Chunk size:**
+<=256
 
 **Overlap:**
+30 tokens
 
 **Why these choices fit your documents:**
+My documents are primarily short social media comments, but longer than a single sentence. This allows for a lower chunk size and overlap.
 
 **Final chunk count:**
-
+183
 ---
 
 ## Embedding Model
@@ -65,8 +70,16 @@
      latency, and local vs. API-hosted. -->
 
 **Model used:**
+I used all-MiniLM-L6-v2 from sentence-transformers, as it will run locally without issues on my device. 
 
 **Production tradeoff reflection:**
+If this were a production application, I would want to use a higher top-k across a larger set of documents.
+
+I would also want to use a larger embedding model, too. I'm limited by the context length of the model, and the technical resources available to me.
+
+There are other considerations, too. Everything in my corpus is in English, so I would want to use a multilingual model.
+
+I would also want to use a model that's been fine-tuned on a domain-specific task, instead of a general-purpose model as I am. We'd want the domain accuracy to be as high as possible. I'd prefer to chunk on boundaries but I'm limited.
 
 ---
 
@@ -87,17 +100,13 @@
 
 ## Evaluation Report
 
-<!-- Run your 5 test questions from planning.md through your system and record the results.
-     Be honest — a partially accurate or inaccurate result that you explain well is more
-     valuable than a suspiciously perfect result. -->
-
-| # | Question | Expected answer | System response (summarized) | Retrieval quality | Response accuracy |
-|---|----------|-----------------|------------------------------|-------------------|-------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+| # | Question                                                                             | Expected answer                                                                                                          |
+|---|--------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| 1 | Is Reinforcement Learning a good course to take online?                              | No — students found it disappointing: brief lectures, textbook-driven; they recommend the David Silver lectures instead. |
+| 2 | How much will I actually interact with professors and classmates online?             | Very little — mostly Slack/Piazza/Discord and TA-run office hours; you have to start study groups yourself.              |
+| 3 | What topics are on the UT Math Assessment, and how should I prepare after years off? | Mostly Algebra I/II and precalc (some trig, a little calc); a practice exam and review modules are provided.             |
+| 4 | Can a PhD student live on the UT stipend, and are second jobs allowed?               | ~$2,400/mo is tight but livable; second jobs are usually barred by contract — extra TA/RA hours (up to 30) are the way.  |
+| 5 | How do I establish Texas residency to qualify for in-state tuition?                  | Live in Texas 12 consecutive months and maintain domicile via gainful employment (student jobs don't count).             |
 
 **Retrieval quality:** Relevant / Partially relevant / Off-target  
 **Response accuracy:** Accurate / Partially accurate / Inaccurate
