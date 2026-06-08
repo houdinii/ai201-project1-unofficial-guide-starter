@@ -1,21 +1,8 @@
 # The Unofficial Guide — Project 1
 
-> **How to use this template:**
-> Complete each section *after* you've built and tested the corresponding part of your system.
-> Do not write placeholder text — if a section isn't done yet, leave it blank and come back.
-> Every section below is required for submission. One-liners will not receive full credit.
-
----
-
 ## Domain
 
-A guide for online students feeling out of place returning to school at the University of Texas at Austin's Computer Science program.
-
-Many universities and program's guidance is created for traditional students who show up at 18 right after high school. If you’re coming back at a later age, 35 for instance, the questions you might have won’t be found directly answered on any .edu page, and are scattered across social media, forums and other unofficial resources. 
-
-This seeks to answer questions like ‘Will I be the only person in my 30’s in the class?’  and subjects such as fitting classes around jobs and shedding the rust of being out of school so long.
-
----
+A guide for older students feeling out of place returning to school at the University of Texas at Austin's Computer Science program. Most university and program guidance is written for traditional students who arrive at 18 straight out of high school. If you're coming back later at, say, 35 for instance,the questions you have won't be answered directly on any .edu page; they're scattered across social media, forums, and other unofficial resources. This guide sets out to answer questions like "Will I be the only person in my 30s in the class?" along with subjects like fitting classes around a job and shedding the rust of being out of school for so long.
 
 ## Document Sources
 
@@ -32,134 +19,75 @@ This seeks to answer questions like ‘Will I be the only person in my 30’s in
 | 9  | modalshift.co        | Review of UT's online MSDS/MSCS program with cost, admissions, format, and course ratings                                                        | https://modalshift.co/msdso-review/                                                            |
 | 10 | 921kiyo.com          | A person's experience of UT's online MSCS program                                                                                                | https://921kiyo.com/ut-austin-cs-online/                                                       |
 
-
----
-
 ## Chunking Strategy
 
-<!-- Describe your chunking approach with enough specificity that someone else could reproduce it.
-     Include:
-     - Chunk size (characters or tokens) and why that size fits your documents
-     - Overlap size and why (or why not) you used overlap
-     - Any preprocessing you did before chunking (e.g., stripping HTML, removing headers)
-     - What your final chunk count was across all documents -->
+Before chunking, I cleaned each document. The titles were often irrelevant to the surrounding context, so I kept them only in the metadata, and I stripped out dates, usernames, and other short metadata-related snippets. All HTML was removed, leaving only the core text and its headers.
 
-The titles of the documents were often irrelevant to the context, so I only included them in the metadata. I also removed dates, usernames and other short metadata related snippets. All HTML was removed, leaving only the core text and headers.
-
-**Chunk size:**
-<=256
-
-**Overlap:**
-30 tokens
-
-**Why these choices fit your documents:**
-My documents are primarily short social media comments, but longer than a single sentence. This allows for a lower chunk size and overlap.
-
-**Final chunk count:**
-183
----
+I chunk to a maximum of 256 tokens with a 30-token overlap. My documents are primarily short social-media comments — though generally longer than a single sentence — which is why a smaller chunk size and a modest overlap suit them; the 256-token ceiling also matches all-MiniLM-L6-v2, which truncates anything longer. Across all ten documents, this produced 183 chunks.
 
 ## Embedding Model
 
-<!-- Name the embedding model you used and explain your choice.
-     Then answer: if you were deploying this system for real users and cost wasn't a constraint,
-     what tradeoffs would you weigh in choosing a different model?
-     Consider: context length limits, multilingual support, accuracy on domain-specific text,
-     latency, and local vs. API-hosted. -->
+I used all-MiniLM-L6-v2 from sentence-transformers because it runs locally without issues on my device.
 
-**Model used:**
-I used all-MiniLM-L6-v2 from sentence-transformers, as it will run locally without issues on my device. 
-
-**Production tradeoff reflection:**
-If this were a production application, I would want to use a higher top-k across a larger set of documents.
-
-I would also want to use a larger embedding model, too. I'm limited by the context length of the model, and the technical resources available to me.
-
-There are other considerations, too. Everything in my corpus is in English, so I would want to use a multilingual model.
-
-I would also want to use a model that's been fine-tuned on a domain-specific task, instead of a general-purpose model as I am. We'd want the domain accuracy to be as high as possible. I'd prefer to chunk on boundaries but I'm limited.
-
----
+If this were a production application, I would make several changes. I would use a higher top-k across a larger set of documents, and I would move to a larger embedding model. I'm currently limited by the model's context length and the technical resources available to me. Everything in my corpus is in English, so I would also want a multilingual model to widen who it can serve. Finally, I would prefer a model fine-tuned on a domain-specific task rather than the general-purpose one I'm using, so that domain accuracy could be as high as possible, and I would chunk on natural boundaries if I weren't constrained.
 
 ## Grounded Generation
 
-<!-- Explain how your system enforces grounding — how does it prevent the LLM from answering
-     beyond the retrieved documents?
-     Describe both your system prompt (what instruction you gave the model) and any structural
-     choices (e.g., how you formatted the context, whether you filtered low-relevance chunks).
-     Do not just say "I told it to use the documents" — show the actual instruction or explain
-     the mechanism. -->
+The system enforces grounding in several layers. First, low-relevance chunks (8 tokens or fewer) are filtered out before anything reaches the model.
 
-We filtered out low-relevance chunks, 8 tokens and less. 
+The system prompt then applies a hard "only" rule: *Answer using ONLY the information in the SOURCES. Never add facts from your own general knowledge, even if you are confident.* That is followed by a refusal contract (a hard refusal) *If the SOURCES do not contain enough to answer, reply with exactly: "I don't have enough information on that."* Every claim must carry an inline citation (*Cite the source document name(s) you used, inline, like (source: )*), and I included a voice constraint to keep the answer in the right voice. 
 
-**System prompt grounding instruction:**
-The system prompt uses a hard 'only' rule `Answer using ONLY the information in the SOURCES. Never add facts from your own general knowledge, even if you are confident` That's follwed by a 'refusal contract' (which is a hard refusal) `If the SOURCES do not contain enough to answer, reply with exactly: "I don't have enough information on that.`
+Structurally, the source filenames are sent alongside the chunks so the model can cite them easily, and I set the temperature to 0.2 to lower drift.
 
-All claims require an inline citation: `Cite the source document name(s) you used, inline, like (source: )` 
-I also included a voice constraint to remain in the correct voicel.
-
-The source filenames are sent with the chunks for easy citing. I set the temp to 0.2 to lower drift, too. 
-
-**How source attribution is surfaced in the response:**
-The LLM cites the source document inline in its answer text like `(source: modalshift_ut_austin_msds_online_review.md)`, and ask() independently returns the deduped list of retrieved source docs with their URLs, which the Gradio UI renders as clickable links under "📍 Retrieved from" (plus the exact chunks and distances in the "🧾 receipts" accordion). 
-
----
+Source attribution is surfaced two ways. The LLM cites the source document inline in its answer text, like (source: modalshift_ut_austin_msds_online_review.md), and `ask()` independently returns the deduped list of retrieved source documents with their URLs, which the Gradio UI renders as clickable links under "📍 Retrieved from" — along with the exact chunks and distances in the "🧾 receipts" accordion.
 
 ## Evaluation Report
 
-| # | Question                                                                             | Expected answer                                                                                                          |
-|---|--------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| 1 | Is Reinforcement Learning a good course to take online?                              | No — students found it disappointing: brief lectures, textbook-driven; they recommend the David Silver lectures instead. |
-| 2 | How much will I actually interact with professors and classmates online?             | Very little — mostly Slack/Piazza/Discord and TA-run office hours; you have to start study groups yourself.              |
-| 3 | What topics are on the UT Math Assessment, and how should I prepare after years off? | Mostly Algebra I/II and precalc (some trig, a little calc); a practice exam and review modules are provided.             |
-| 4 | Can a PhD student live on the UT stipend, and are second jobs allowed?               | ~$2,400/mo is tight but livable; second jobs are usually barred by contract — extra TA/RA hours (up to 30) are the way.  |
-| 5 | How do I establish Texas residency to qualify for in-state tuition?                  | Live in Texas 12 consecutive months and 'maintain domicile via gainful employment' (student jobs don't count).           |
+| # | Question                                                                             | Expected answer                                                                                                            |
+|---|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| 1 | Is Reinforcement Learning a good course to take online?                              | No, students found it disappointing: brief lectures, textbook-driven; they recommend the David Silver lectures instead.    |
+| 2 | How much will I actually interact with professors and classmates online?             | Very little. Mostly Slack/Piazza/Discord and TA-run office hours; you have to start study groups yourself.                 |
+| 3 | What topics are on the UT Math Assessment, and how should I prepare after years off? | Mostly Algebra I/II and precalc (some trig, a little calc); a practice exam and review modules are provided.               |
+| 4 | Can a PhD student live on the UT stipend, and are second jobs allowed?               | ~$2,400/mo is tight but livable; second jobs are usually barred by contract with extra TA/RA hours (up to 30) are the way. |
+| 5 | How do I establish Texas residency to qualify for in-state tuition?                  | Live in Texas 12 consecutive months and maintain domicile via gainful employment (student jobs don't count).               |
 
-**Retrieval quality:** Relevant / Partially relevant / Off-target  
-**Response accuracy:** Accurate / Partially accurate / Inaccurate
+Retrieval quality was strong overall, with the only wrinkle being a citation issue on the Texas residency question. Questions 1 through 4 returned relevant chunks, and question 5 was partially relevant. Response accuracy followed the same pattern: questions 1 through 4 were accurate, and question 5 was partially accurate. The system answered every question in the test set. The one issue was the Texas residency question, where the model did not cite all of its claims and it's unclear whether it drew on its own information, but otherwise everything worked.
 
----
+### More from the question bank
+
+These are additional questions I synthetically created to further test the system's ability to answer. A couple of them intentionally have no supporting answer in the corpus, in order to test the model's refusal behavior.
+
+| #  | Question                                                                            | Expected answer                                                                                                             |
+|----|-------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| 6  | Is the online CS master's the same degree as the on-campus one?                     | Yes — the same degree; the transcript may just note it was taken online.                                                    |
+| 7  | How much does the online CS/Data Science master's cost per course and in total?     | $1,000 per course, $10,000 total (international students pay a small per-semester fee).                                     |
+| 8  | Do I need a GRE score or a CS undergrad degree to get into the online program?      | No — the GRE is waived and you don't need a CS undergrad degree.                                                            |
+| 9  | How long do I have to finish, and is every course offered every semester?           | Up to 6 years; not every course runs each term, and only a few are offered in summer.                                       |
+| 10 | What's it like taking two courses at once while working full time?                  | Doable but leaves almost no free time for family or hobbies.                                                                |
+| 11 | Is there a thesis or research option in the online programs?                        | MSCSO and MSAIO offer a thesis option; MSDSO does not.                                                                      |
+| 12 | What is New Wave Longhorns and how do I join?                                       | A student org for nontraditional/25+ students — @newwavelonghorns on Instagram, an active GroupMe, and monthly events.      |
+| 13 | Who counts as a "nontraditional student" at UT, and is there a scholarship?         | 25+/veteran/transfer/parent/first-gen/international; the Senate Non-Traditional Student Scholarship (2 semesters, 3.0 GPA). |
+| 14 | What UT resources help students struggling with money or food?                      | UT Outpost and the Student Emergency Fund; favor grants/Pell over loans.                                                    |
+| 15 | How many credit hours can I transfer in, and how many must I complete in residence? | Max 60 transfer hours; 60 in-residence plus 36 upper-division hours to graduate.                                            |
 
 ## Failure Case Analysis
 
-**Question that failed:**
-How do I establish Texas residency for in-state tuition?
+The question that failed was "How do I establish Texas residency for in-state tuition?" The system returned:
 
-**What the system returned:**
 ```
 To establish Texas residency for in-state tuition, you must meet certain criteria. According to the rules mentioned (source: college_confidential_establish_residency.md), if you are independent for tax purposes, you may gain resident status if you establish domicile in the state. To establish domicile, you must live in Texas for 12 consecutive months and establish and maintain domicile for 12 consecutive months, as evidenced by gainful employment in Texas, sole or joint marital ownership of residential real property in Texas, ownership and operation of a business in Texas, or marriage for one year to a person who has established domicile in Texas.
 ```
 
-**Root cause (tied to a specific pipeline stage):**
-Retrieval/Generation. The model returned a partially cited answer, but elaborated in a manner that drew from it's own knowledge.
-
-The information can be found in the source documents, so this may be due to the lower k number. It may aslo be due to the prompt not elaborating on the requirements enough.
-
-**What you would change to fix it:**
-I can raise the k number a bit. I can also do some prompt engineering to ensure the LLM stays within bounds.
-
----
+The root cause sits at the retrieval/generation stages. The model returned a partially cited answer but elaborated in a way that drew on its own knowledge. The information does exist in the source documents, so this may be due to the lower k value, or to a prompt that didn't spell out the requirements firmly enough. To fix it, I would raise k somewhat and do some prompt engineering to keep the model within bounds. Overall, though, I was impressed with the citations across the board — more than I expected.
 
 ## Spec Reflection
 
-**One way the spec helped you during implementation:**
-The spec maintained a source of truth between me and the model I was working with (Claude Code). I have trouble remembering the exact steps I need to take by nature, so the spec is just as helpful to me as the model.
+The spec acted as a source of truth between me and the model I was working with (Claude Code). I have trouble remembering the exact steps I need to take by nature, so the spec was as helpful to me as it was to the model.
 
-**One way your implementation diverged from the spec, and why:**
-I was planning on using a k=10 value, but the reddit comments were very short, and the results were a bit odd, so I backed off. I ended up settling on 5, a value that retuned enough to answer questions but not enoguh to lead to extranuous info in the result.
-
----
+My implementation diverged from the spec on top-k. I had planned to use k=10, but the Reddit comments were very short and the results came back a bit odd, so I backed off and settled on 5. Its a value that returned enough to answer questions without pulling in so much that the results filled with extraneous information.
 
 ## AI Usage
 
-**Instance 1**
+In the first instance, I gave the AI my planning document and a text-only version of my flowchart. It produced a chunking strategy tailored to my documents, and I overrode the chunk size from 500 to 256 because my documents are short social posts.
 
-- *What I gave the AI:* I provided the system with my planning document and a text-only version of my flowchart.
-- *What it produced:* The AI produced a chunking strategy that was tailored to my documents.
-- *What I changed or overrode:* I overrode the chunk size from 500 to 256 because my documents are short social posts
-
-**Instance 2**
-
-- *What I gave the AI:* I provided the system with my planning document and a text-only version of my flowchart, and a list of documents.
-- *What it produced:* A description of my pipeline, restated in new terms (for understanding) as well as a list of my questions permutated in various ways.
-- *What I changed or overrode:* Almost everything. This was not a great strategy for brainstorming. However, through the corrections I gained a ton of understanding
+In the second instance, I gave it my planning document, a text-only version of my flowchart, and a list of documents. It produced a restatement of my pipeline in new terms (to help me understand it), along with my questions permutated in various ways. I overrode almost all of it. This wasn't a great strategy for brainstorming,  but working through the corrections gave me a ton of understanding.

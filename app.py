@@ -35,6 +35,16 @@ CSS = """
   padding: 4px 20px; min-height: 64px;
 }
 #ask-btn { font-weight: 700 !important; }
+.qbtn {
+  width: 100% !important;
+  white-space: normal !important;   /* wrap long questions instead of truncating */
+  text-align: left !important;
+  height: auto !important; min-height: 0 !important;
+  line-height: 1.35 !important;
+  padding: 10px 14px !important;
+  font-weight: 500 !important;
+}
+.qbtn:hover { border-color: #bf5700 !important; color: #bf5700 !important; }
 footer { display: none !important; }
 """
 
@@ -52,6 +62,19 @@ EXAMPLES = [
     "Can a PhD student live on the UT stipend, and are second jobs allowed?",
     "Where do older students at UT find each other?",
     "How do I establish Texas residency for in-state tuition?",
+]
+
+MORE_EXAMPLES = [
+    "Is the online CS master's the same degree as the on-campus one?",
+    "How much does the online CS/Data Science master's cost per course and in total?",
+    "Do I need a GRE score or a CS undergrad degree to get into the online program?",
+    "How long do I have to finish, and is every course offered every semester?",
+    "What's it like taking two courses at once while working full time?",
+    "Is there a thesis or research option in the online programs?",
+    "What is New Wave Longhorns and how do I join?",
+    "Who counts as a 'nontraditional student' at UT, and is there a scholarship?",
+    "What UT resources help students struggling with money or food?",
+    "How many credit hours can I transfer in, and how many must I complete in residence?",
 ]
 
 
@@ -87,7 +110,10 @@ with gr.Blocks(title="The Unofficial Guide") as demo:
     )
     ask_btn = gr.Button("Ask the guide  🤘", variant="primary", elem_id="ask-btn")
 
-    gr.Examples(examples=EXAMPLES, inputs=question, label="Try one of these")
+    gr.Markdown("**Try one of these**")
+    example_btns = [gr.Button(q, elem_classes="qbtn") for q in EXAMPLES]
+    with gr.Accordion("…or dig into the details", open=False):
+        example_btns += [gr.Button(q, elem_classes="qbtn") for q in MORE_EXAMPLES]
 
     gr.Markdown("### Answer")
     answer = gr.Markdown(elem_id="answer-card")
@@ -99,6 +125,12 @@ with gr.Blocks(title="The Unofficial Guide") as demo:
     outputs = [answer, sources, receipts]
     ask_btn.click(handle_query, inputs=question, outputs=outputs)
     question.submit(handle_query, inputs=question, outputs=outputs)
+
+    # each example button drops its text into the box, then answers
+    for btn in example_btns:
+        btn.click(lambda v=btn.value: v, outputs=question).then(
+            handle_query, inputs=question, outputs=outputs
+        )
 
 
 if __name__ == "__main__":
